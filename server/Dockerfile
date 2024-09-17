@@ -22,4 +22,4 @@ COPY . .
 EXPOSE 8081
 
 # Command to start the app
-CMD ["sh", "-c", "npm start && node setupAdmin.js"]
+CMD ["npm", "start"]
