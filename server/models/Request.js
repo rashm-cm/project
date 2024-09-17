@@ -37,6 +37,10 @@ const Request = sequelize.define('Request', {
         type: DataTypes.STRING,
         defaultValue: 'pending',
     },
+    feedback: {  // Adding feedback attribute
+        type: DataTypes.STRING, // String type for feedback
+        allowNull: true, // Allow feedback to be optional
+    }
 }, {
     timestamps: false // Disable createdAt and updatedAt
 });

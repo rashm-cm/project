@@ -14,6 +14,11 @@ import {
 } from "./models/index.js";
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import Feedback from './models/Feedback.js'; // Adjust the path as needed
+// GET: Fetch all feedback
+
+
+
 const saltRounds = 10;
 const swaggerOptions = {
   definition: {
@@ -93,6 +98,10 @@ const verifyAdmin = async (req, res, next) => {
 //   return res.json({ Status: "Success", name: req.name });
 // });
 
+
+
+ 
+
 app.get("/", verifyUser, (req, res) => {
   return res.json({
     Status: "Success",
@@ -100,36 +109,39 @@ app.get("/", verifyUser, (req, res) => {
   });
 });
 
-app.get("/customers", verifyUser, verifyAdmin, async (req, res) => {
+app.get('/feedback', async (req, res) => {
   try {
-    const customers = await User.findAll({
-      where: { role: "customer" },
-      attributes: ["id", "name", "email"], // Specify the attributes you want to return
-    });
-
-    if (customers.length > 0) {
-      return res.json(customers);
+    const feedback = await Feedback.findAll();
+    if (feedback.length > 0) {
+      return res.json(feedback);
     } else {
-      return res.status(404).json({ Error: "No customers found" });
+      return res.status(404).json({ message: 'No feedback found' });
     }
   } catch (err) {
-    console.error("Error fetching customers:", err);
-    return res.status(500).json({ Error: "Server error" });
+    console.error('Error fetching feedback:', err);
+    return res.status(500).json({ message: 'Error fetching feedback' });
   }
 });
-app.post("/register", async (req, res) => {
+
+// POST: Add new feedback
+app.post('/feedback', async (req, res) => {
+  const { customer_id, service_id, feedback_message, email } = req.body;
+  
+  if (!customer_id || !service_id || !feedback_message || !email) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
   try {
-    const hash = await bcrypt.hash(req.body.password, saltRounds);
-    await User.create({
-      name: req.body.name,
-      email: req.body.email,
-      password: hash,
-      role: req.body.role, // Automatically assign 'customer' role
+    const newFeedback = await Feedback.create({
+      customer_id,
+      service_id,
+      feedback_message,
+      email
     });
-    return res.json({ Status: "Success" });
+    return res.json({ message: 'Feedback added successfully', feedback: newFeedback });
   } catch (err) {
-    console.error("Error inserting data in server:", err);
-    return res.json({ Error: "Error inserting data in server" });
+    console.error('Error inserting feedback:', err);
+    return res.status(500).json({ message: 'Error adding feedback' });
   }
 });
 app.post("/login", async (req, res) => {
@@ -386,7 +398,7 @@ app.post("/customer-service/enroll", verifyUser, async (req, res) => {
 
 app.post("/requests", async (req, res) => {
   try {
-    const { customer_id, service_id, plan, request_type } = req.body;
+    const { customer_id, service_id, plan, request_type,feedback } = req.body;
 
     const service = await Service.findByPk(service_id);
     const selectedPlan = await Plan.findOne({
@@ -405,7 +417,9 @@ app.post("/requests", async (req, res) => {
       service_id,
       plan,
       features: selectedPlan.features,
-      request_type, // Optional: Add features if needed
+      request_type,
+      feedback:  feedback || "Not Available"
+     
     });
 
     return res.json({
@@ -437,6 +451,24 @@ app.post("/approve-request/:id", async (req, res) => {
 
     switch (request.request_type) {
       case "update":
+        const service1 = await CustomerService.findOne({
+          where: {
+            customer_id: request.customer_id,
+            service_id: request.service_id,
+          },
+        });
+        if (!service1) {
+          return res
+            .status(404)
+            .json({ Error: "Service not found for this customer" });
+        }
+        const name1 = await User.findOne({ where: { id: request.customer_id } });
+
+        
+
+        if (!name1) {
+          return res.status(404).json({ Error: "Customer ID not found" });
+        }
         updateResult = await CustomerService.update(
           { features: request.features, plan_name: request.plan },
           {
@@ -446,6 +478,15 @@ app.post("/approve-request/:id", async (req, res) => {
             },
           }
         );
+        await Archive.create({
+          customer_id: request.customer_id,
+          customer_name: name1.name,
+          service_id: request.service_id,
+          plan_name: service1.plan_name,
+          features: service1.features,
+          feedback:request.feedback || "N/A",
+          terminated_at: new Date(),
+        });
 
         if (updateResult[0] !== 0) {
           await Request.destroy({ where: { id: requestId } });
@@ -483,12 +524,14 @@ app.post("/approve-request/:id", async (req, res) => {
             service_id: request.service_id,
           },
         });
+        
         await Archive.create({
           customer_id: request.customer_id,
           customer_name: name.name,
           service_id: request.service_id,
           plan_name: service.plan_name,
           features: service.features,
+          feedback:request.feedback || "N/A",
           terminated_at: new Date(),
         });
 

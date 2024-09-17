@@ -22,6 +22,11 @@ const Archive = sequelize.define('Archive', {
         type: DataTypes.TEXT,
         allowNull: true // Assuming features are optional
     }
+    ,
+    feedback: {
+        type: DataTypes.TEXT,
+        allowNull: false // Feedback message is required
+    }
 }, {
     timestamps: true // Enable createdAt and updatedAt
 });
