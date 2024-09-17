@@ -55,6 +55,28 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 // Middleware to verify if the user is authenticated
+
+const createAdmin = async () => {
+  try {
+      await sequelize.authenticate();
+
+      const hashedPassword = await bcrypt.hash('Admin@123', saltRounds);
+
+      await User.create({
+          name: 'Admin',
+          email: 'admin@example.com',
+          password: hashedPassword,
+          role: 'admin'
+      });
+
+      console.log("Admin user created successfully.");
+
+  } catch (err) {
+      console.error("Error creating admin user:", err);
+  }
+};
+
+createAdmin();
 const verifyUser = (req, res, next) => {
   const token = req.cookies.token;
   if (!token) {
