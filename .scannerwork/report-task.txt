@@ -2,5 +2,5 @@ projectKey=SPS
 serverUrl=http://localhost:9000
 serverVersion=10.6.0.92116
 dashboardUrl=http://localhost:9000/dashboard?id=SPS
-ceTaskId=d778cb98-3cb8-451b-af2b-aae6e3606c8e
-ceTaskUrl=http://localhost:9000/api/ce/task?id=d778cb98-3cb8-451b-af2b-aae6e3606c8e
+ceTaskId=3f188ba6-9454-4761-97e5-59206b7ead28
+ceTaskUrl=http://localhost:9000/api/ce/task?id=3f188ba6-9454-4761-97e5-59206b7ead28

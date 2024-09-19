@@ -120,16 +120,34 @@ const verifyAdmin = async (req, res, next) => {
 //   return res.json({ Status: "Success", name: req.name });
 // });
 
-
-
- 
-
 app.get("/", verifyUser, (req, res) => {
   return res.json({
     Status: "Success",
     name: req.name,
   });
 });
+ 
+app.get("/customers", verifyUser, verifyAdmin, async (req, res) => {
+  try {
+    const customers = await User.findAll({
+      where: { role: "customer" },
+      attributes: ["id", "name", "email"], // Specify the attributes you want to return
+    });
+ 
+    if (customers.length > 0) {
+      return res.json(customers);
+    } else {
+      return res.status(404).json({ Error: "No customers found" });
+    }
+  } catch (err) {
+    console.error("Error fetching customers:", err);
+    return res.status(500).json({ Error: "Server error" });
+  }
+});
+
+ 
+
+
 
 app.get('/feedback', async (req, res) => {
   try {
@@ -166,6 +184,7 @@ app.post('/feedback', async (req, res) => {
     return res.status(500).json({ message: 'Error adding feedback' });
   }
 });
+
 app.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ where: { email: req.body.email } });
@@ -246,6 +265,21 @@ app.get("/checkservice", async (req, res) => {
   } catch (err) {
     console.error("Error checking service name:", err);
     return res.status(500).json({ error: "Server error" });
+  }
+});
+app.post("/register", async (req, res) => {
+  try {
+    const hash = await bcrypt.hash(req.body.password, saltRounds);
+    await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: hash,
+      role: req.body.role, // Automatically assign 'customer' role
+    });
+    return res.json({ Status: "Success" });
+  } catch (err) {
+    console.error("Error inserting data in server:", err);
+    return res.json({ Error: "Error inserting data in server" });
   }
 });
 
@@ -443,7 +477,7 @@ app.post("/requests", async (req, res) => {
       feedback:  feedback || "Not Available"
      
     });
-
+    const createdRequest = await Request.findByPk(newRequest.id);
     return res.json({
       Status: "Success",
       Message: "Request created successfully",
